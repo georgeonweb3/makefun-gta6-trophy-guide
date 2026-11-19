@@ -98,7 +98,7 @@ export function renderProgress(state, total) {
   }
   document.getElementById('progressDetail').textContent =
     `Platinum ${byGrade.platinum}/${totals.platinum} · Gold ${byGrade.gold}/${totals.gold} · Silver ${byGrade.silver}/${totals.silver} · Bronze ${byGrade.bronze}/${totals.bronze}`;
-  const next = state.trophies.find((t) => !state.earned.has(t.name));
+  const next = state.trophies.find((t) => t.kind !== 'platinum' && !state.earned.has(t.name));
   const nextEl = document.getElementById('nextUp');
   if (!next) {
     nextEl.innerHTML = '';
