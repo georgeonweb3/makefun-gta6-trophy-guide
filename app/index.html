@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leonida Ledger — GTA VI Trophy Guide &amp; Tracker</title>
+<meta name="description" content="An offline guide and tracker for all 55 PlayStation 5 trophies of Grand Theft Auto VI: checklist, roadmap to the platinum, missable flags, and a cited guide for every trophy.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <p class="kicker">Grand Theft Auto VI &middot; PlayStation 5 &middot; Offline guide</p>
+      <h1>Leonida Ledger</h1>
+      <p class="subtitle">Every one of the 55 trophies, with a guide that says where each fact comes from. Tick them off as you earn them; your progress never leaves this browser.</p>
+    </div>
+    <div class="progress-card" id="progressCard">
+      <p class="big-count"><span id="earnedCount">0</span><span class="of"> / 55</span></p>
+      <p class="progress-label">trophies earned</p>
+      <div class="progress-bar" role="progressbar" aria-label="Trophies earned"><div class="progress-fill" id="progressFill"></div></div>
+      <p class="progress-detail" id="progressDetail">Platinum 0/1 &middot; Gold 0/2 &middot; Silver 0/6 &middot; Bronze 0/46</p>
+      <p class="next-up" id="nextUp"></p>
+    </div>
+  </div>
+  <nav class="tabs" aria-label="Guide sections">
+    <button type="button" class="tab active" data-tab="tracker">Tracker</button>
+    <button type="button" class="tab" data-tab="roadmap">Roadmap to platinum</button>
+    <button type="button" class="tab" data-tab="missables">Missables</button>
+    <button type="button" class="tab" data-tab="sources">Sources &amp; method</button>
+  </nav>
+</header>
+
+<main>
+  <section id="tab-tracker" class="tab-panel">
+    <div class="toolbar">
+      <label class="search">Search <input id="search" type="search" placeholder="Trophy, mission or keyword…" autocomplete="off"></label>
+      <fieldset class="kind-filters" id="kindFilters" aria-label="Filter by kind">
+        <legend>Kind</legend>
+        <button type="button" data-kind="all" class="active">All <span class="count" data-count="all"></span></button>
+        <button type="button" data-kind="story">Story <span class="count" data-count="story"></span></button>
+        <button type="button" data-kind="missable">Missable <span class="count" data-count="missable"></span></button>
+        <button type="button" data-kind="collectibles">Collectibles <span class="count" data-count="collectibles"></span></button>
+        <button type="button" data-kind="activities">Activities <span class="count" data-count="activities"></span></button>
+        <button type="button" data-kind="online">Online <span class="count" data-count="online"></span></button>
+      </fieldset>
+      <label class="grade-filter">Grade
+        <select id="gradeFilter">
+          <option value="all">All grades</option>
+          <option value="platinum">Platinum</option>
+          <option value="gold">Gold</option>
+          <option value="silver">Silver</option>
+          <option value="bronze">Bronze</option>
+        </select>
+      </label>
+      <label class="spoiler-toggle"><input id="spoilerToggle" type="checkbox"> Hide story spoilers</label>
+      <label class="earned-toggle"><input id="hideEarned" type="checkbox"> Hide earned</label>
+    </div>
+    <div class="save-row">
+      <button type="button" id="exportBtn">Export progress</button>
+      <label class="import-btn">Import progress <input id="importFile" type="file" accept="application/json,.json"></label>
+      <button type="button" id="resetBtn" class="quiet">Reset progress</button>
+      <p class="save-note">Progress is saved in this browser (localStorage). Export keeps a copy as a file you can import back on any device.</p>
+    </div>
+    <p class="results-line" id="resultsLine"></p>
+    <ul class="trophy-list" id="trophyList"></ul>
+    <p class="empty-note" id="emptyNote" hidden>No trophies match these filters.</p>
+  </section>
+
+  <section id="tab-roadmap" class="tab-panel" hidden>
+    <div class="roadmap-facts" id="roadmapFacts"></div>
+    <ol class="roadmap-steps" id="roadmapSteps"></ol>
+    <div class="warnings" id="roadmapWarnings"></div>
+  </section>
+
+  <section id="tab-missables" class="tab-panel" hidden>
+    <div id="missablesBody"></div>
+  </section>
+
+  <section id="tab-sources" class="tab-panel" hidden>
+    <div id="sourcesBody"></div>
+  </section>
+</main>
+
+<footer>
+  <p>Leonida Ledger is an unofficial fan guide. Grand Theft Auto and GTA are trademarks of Take-Two Interactive; this guide uses no Rockstar logo, artwork or game screenshots. Trophy names and descriptions are shown as PlayStation publishes them. Guide text is this site's own words, written for this guide, and every specific step names its source beside it.</p>
+  <p>List status: 55 trophies confirmed live on PlayStation and Xbox data on 19 November 2026. Five trophies were still unconfirmed by every published guide on 18 November 2026 and are marked as such, not guessed.</p>
+</footer>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
