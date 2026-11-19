@@ -3,102 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Leonida Trophy Atlas — GTA VI trophy guide and tracker</title>
-<meta name="description" content="An offline guide and tracker for all 55 PlayStation 5 trophies of Grand Theft Auto VI: checklist, roadmap, missables, and a cited guide for every trophy.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23ff2e88'/%3E%3Ctext x='16' y='23' font-size='18' text-anchor='middle' fill='%23fff' font-family='sans-serif' font-weight='bold'%3EVI%3C/text%3E%3C/svg%3E">
+<title>GTA VI trophy checklist</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="masthead">
-  <div class="masthead-text">
-    <p class="kicker">Grand Theft Auto VI &middot; PlayStation 5</p>
-    <h1>Leonida Trophy Atlas</h1>
-    <p class="lede">Every one of the 55 trophies, with a cited guide, a roadmap to the platinum, and a checklist that remembers where you are. Works fully offline.</p>
-  </div>
-  <div class="progress-card" id="progressCard">
-    <p class="progress-count" id="progressCount">0 of 55 earned</p>
-    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-    <p class="progress-sub" id="progressSub">0% to the platinum</p>
-    <p class="next-up" id="nextUp"></p>
-  </div>
+<header>
+  <h1>GTA VI trophy checklist</h1>
+  <p id="progress">0 of 55 earned</p>
 </header>
-
-<nav class="tabs" aria-label="Guide sections">
-  <button type="button" class="tab active" data-tab="tracker" id="tab-tracker">Tracker</button>
-  <button type="button" class="tab" data-tab="roadmap" id="tab-roadmap">Roadmap</button>
-  <button type="button" class="tab" data-tab="missables" id="tab-missables">Missables</button>
-</nav>
-
-<main>
-  <section id="panel-tracker" class="panel">
-    <div class="controls">
-      <label class="search-label">Search <input id="search" type="search" placeholder="Trophy name or description&hellip;" autocomplete="off"></label>
-      <label>Kind
-        <select id="kindFilter">
-          <option value="all">All kinds</option>
-          <option value="story">Story</option>
-          <option value="missable">Missable</option>
-          <option value="collectibles">Collectibles</option>
-          <option value="activities">Activities</option>
-          <option value="online">Online</option>
-          <option value="platinum">Platinum</option>
-        </select>
-      </label>
-      <label>Grade
-        <select id="gradeFilter">
-          <option value="all">All grades</option>
-          <option value="platinum">Platinum</option>
-          <option value="gold">Gold</option>
-          <option value="silver">Silver</option>
-          <option value="bronze">Bronze</option>
-        </select>
-      </label>
-      <label>Show
-        <select id="stateFilter">
-          <option value="all">All trophies</option>
-          <option value="earned">Earned only</option>
-          <option value="remaining">Still to earn</option>
-        </select>
-      </label>
-      <label class="spoiler-toggle"><input id="spoilerToggle" type="checkbox"> Hide story spoilers</label>
-    </div>
-    <p class="controls-note" id="filterNote"></p>
-    <div class="toolbar">
-      <button type="button" id="exportBtn">Export progress</button>
-      <label class="import-label">Import progress <input id="importFile" type="file" accept="application/json,.json"></label>
-      <button type="button" id="resetBtn">Reset progress</button>
-      <span class="saved-note" id="savedNote">Progress saves in this browser.</span>
-    </div>
-    <p class="empty" id="emptyNote" hidden>No trophies match these filters.</p>
-    <ol class="trophy-list" id="trophyList"></ol>
-  </section>
-
-  <section id="panel-roadmap" class="panel" hidden>
-    <p class="panel-intro">The road to <strong>Vice Got a Price!</strong>, in the order to play it. Built from the official trophy descriptions and the PowerPyx roadmap: about 200 hours in total, difficulty 4 out of 10, one playthrough, no online trophies. There is no mission replay, so keep a manual save at the start and end of every chapter; the game gives you 15 manual save slots plus one autosave.</p>
-    <div id="roadmapStages"></div>
-  </section>
-
-  <section id="panel-missables" class="panel" hidden>
-    <p class="panel-intro">Only one trophy is reported as possibly missable. Everything else can be earned after the story in free-roam, and the 100% checklist has nothing missable on it. The game has no mission replay, so the habit that protects you is a manual save at the start of each chapter.</p>
-    <div id="missableList"></div>
-    <h2>Not missable, but worth knowing</h2>
-    <ul class="plain-list">
-      <li>Story trophies (Chapters 1 to 5 and the named missions) pop as you play and cannot be missed.</li>
-      <li>Side questlines for Andy, Kenton, Billy, Randy and Tyrone stay available after the story, even when a character goes quiet for a chapter.</li>
-      <li>Stranger mission strands are still in the open world after the credits.</li>
-      <li>Optional missions with an hourglass icon can expire, but they do not feed any trophy.</li>
-      <li>Cheats disable trophies and saving on your save file, so keep them off a trophy run.</li>
-    </ul>
-    <p class="source-line">Missable report: PowerPyx and GTABase, checked 19 November 2026. The Chapter 1 meditation is unconfirmed as a strict requirement; do it anyway.</p>
-  </section>
-</main>
-
-<footer>
-  <h2>Sources</h2>
-  <p>Names, descriptions and grades are the official list as published on PlayStation, as listed by <a href="https://www.exophase.com/game/grand-theft-auto-vi-psn/trophies/">Exophase</a> and <a href="https://psnprofiles.com/trophies/31241-grand-theft-auto-vi">PSNProfiles</a> (the two agree on all 55). Every guide is written in our own words from the method in the <a href="https://www.powerpyx.com/gta-6-grand-theft-auto-vi-trophy-guide-roadmap/">PowerPyx GTA 6 Trophy Guide &amp; Roadmap</a>, checked 19 November 2026, the day the game launched; where PowerPyx lists a method as not yet known, this guide says so plainly instead of inventing one. Roadmap times and the missable warning are from the same PowerPyx guide. No Rockstar logo, artwork or game screenshot is used anywhere in this guide.</p>
-  <p class="fineprint">Leonida Trophy Atlas is an unofficial fan guide. Grand Theft Auto and GTA are trademarks of Rockstar Games. Progress is stored only in your browser (localStorage); nothing leaves your device.</p>
-</footer>
-
+<div class="controls">
+  <label>Grade <select id="grade"><option value="all">All</option><option value="platinum">Platinum</option><option value="gold">Gold</option><option value="silver">Silver</option><option value="bronze">Bronze</option></select></label>
+  <button id="export" type="button">Export progress</button>
+  <label class="import">Import progress <input id="import" type="file" accept="application/json"></label>
+</div>
+<table>
+  <thead><tr><th>Earned</th><th>Trophy</th><th>Grade</th><th>How to get it</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
 <script type="module" src="app.js"></script>
 </body>
 </html>
