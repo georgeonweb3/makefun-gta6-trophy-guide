@@ -1,52 +1,108 @@
-// A plain checklist of the 55 trophies: tick one off and it stays ticked (localStorage); export and import the ticks.
-const KEY = 'gta6-trophy-checklist';
-const rows = document.getElementById('rows');
-const grade = document.getElementById('grade');
-let earned = new Set(JSON.parse(localStorage.getItem(KEY) ?? '[]'));
-const doc = await (await fetch('data/trophies.json')).json();
+// Vice City Trophy Companion: load the 55 trophies, wire the checklist,
+// filters, roadmap and missables, and keep progress in the browser.
+import {
+  loadProgress, saveProgress, loadSettings, saveSettings,
+  exportProgress, readImportedProgress,
+} from './store.js';
+import { renderChecklist, renderProgress, renderNextUp } from './tracker.js';
+import { renderRoadmap, renderMissables } from './roadmap.js';
 
-function save() {
-  localStorage.setItem(KEY, JSON.stringify([...earned]));
+const state = {
+  trophies: [],
+  earned: loadProgress(),
+  settings: loadSettings(),
+  search: '',
+  kind: 'all',
+  grade: 'all',
+  spoiler: false,
+  openGuides: new Set(),
+};
+state.spoiler = state.settings.spoiler;
+
+function renderAll() {
+  renderProgress(state.trophies, state.earned);
+  renderNextUp(state.trophies, state.earned);
+  renderChecklist(state.trophies, state, toggleEarned);
+  renderRoadmap(state.trophies, state.earned);
+  renderMissables(state.trophies, state.earned);
 }
 
-function render() {
-  rows.replaceChildren();
-  for (const t of doc.trophies) {
-    if (grade.value !== 'all' && t.grade !== grade.value) continue;
-    const tr = document.createElement('tr');
-    const box = document.createElement('input');
-    box.type = 'checkbox';
-    box.checked = earned.has(t.name);
-    box.addEventListener('change', () => {
-      if (box.checked) earned.add(t.name);
-      else earned.delete(t.name);
-      save();
-      render();
-    });
-    const cells = [box, `${t.name}\n${t.description}`, t.grade, t.guide];
-    for (const c of cells) {
-      const td = document.createElement('td');
-      if (typeof c === 'string') td.textContent = c;
-      else td.append(c);
-      tr.append(td);
-    }
-    rows.append(tr);
+function toggleEarned(name, checked) {
+  if (checked) state.earned.add(name);
+  else state.earned.delete(name);
+  saveProgress(state.earned);
+  renderAll();
+}
+
+function switchTab(tab) {
+  for (const button of document.querySelectorAll('.tab')) {
+    const active = button.dataset.tab === tab;
+    button.classList.toggle('active', active);
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
   }
-  document.getElementById('progress').textContent = `${earned.size} of ${doc.trophies.length} earned`;
+  for (const panel of document.querySelectorAll('.panel')) {
+    panel.hidden = panel.id !== `panel-${tab}`;
+  }
 }
 
-document.getElementById('export').addEventListener('click', () => {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify([...earned])], { type: 'application/json' }));
-  a.download = 'trophy-progress.json';
-  a.click();
-});
-document.getElementById('import').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  earned = new Set(JSON.parse(await file.text()));
-  save();
-  render();
-});
-grade.addEventListener('change', render);
-render();
+async function bootCompanion() {
+  const response = await fetch('data/trophies.json');
+  const doc = await response.json();
+  state.trophies = doc.trophies;
+
+  const search = document.getElementById('search');
+  const kind = document.getElementById('kind');
+  const grade = document.getElementById('grade');
+  const spoiler = document.getElementById('spoiler');
+  spoiler.checked = state.spoiler;
+
+  search.addEventListener('input', () => {
+    state.search = search.value;
+    renderChecklist(state.trophies, state, toggleEarned);
+  });
+  kind.addEventListener('change', () => {
+    state.kind = kind.value;
+    renderChecklist(state.trophies, state, toggleEarned);
+  });
+  grade.addEventListener('change', () => {
+    state.grade = grade.value;
+    renderChecklist(state.trophies, state, toggleEarned);
+  });
+  spoiler.addEventListener('change', () => {
+    state.spoiler = spoiler.checked;
+    saveSettings({ spoiler: state.spoiler });
+    renderChecklist(state.trophies, state, toggleEarned);
+  });
+
+  document.getElementById('export').addEventListener('click', () => {
+    exportProgress(state.earned);
+  });
+  document.getElementById('import').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      const known = new Set(state.trophies.map((trophy) => trophy.name));
+      state.earned = await readImportedProgress(file, known);
+      saveProgress(state.earned);
+      renderAll();
+    } catch {
+      alert('That file is not a trophy-progress export from this guide.');
+    }
+    event.target.value = '';
+  });
+  document.getElementById('reset').addEventListener('click', () => {
+    if (!confirm('Clear every tick? Your exported file stays safe if you saved one.')) return;
+    state.earned = new Set();
+    saveProgress(state.earned);
+    renderAll();
+  });
+
+  for (const button of document.querySelectorAll('.tab')) {
+    button.addEventListener('click', () => switchTab(button.dataset.tab));
+  }
+
+  renderAll();
+}
+
+bootCompanion();

@@ -1,5 +1,1 @@
-[
-  { "file": "1-checklist.jpg", "path": "/", "viewport": { "width": 1280, "height": 800 } },
-  { "file": "2-silver.jpg", "path": "/", "grade": "silver", "viewport": { "width": 1280, "height": 800 } },
-  { "file": "3-bronze.jpg", "path": "/", "grade": "bronze", "scroll": 1400, "viewport": { "width": 1280, "height": 800 } }
-]
+[{"file":"1-checklist.jpg","note":"Cover: header, progress 17 of 55, checked note, tabs, filters, export/import, checklist with the platinum guide and its sources open","path":"/","viewport":{"height":1000,"width":1280}},{"file":"2-roadmap.jpg","note":"Roadmap to the platinum, stage 1 with earned story trophies ticked","path":"/","tab":"roadmap","viewport":{"height":800,"width":1280}},{"file":"3-missables.jpg","note":"Missables: Positive Mental Attitude, the source disagreement, and save advice","path":"/","tab":"missables","viewport":{"height":800,"width":1280}},{"file":"4-spoiler.jpg","note":"Spoiler setting on: unearned story trophies masked, earned ones shown, progress 17 of 55","path":"/","spoiler":true,"viewport":{"height":800,"width":1280}}]

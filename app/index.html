@@ -3,23 +3,92 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GTA VI trophy checklist</title>
+<title>Vice City Trophy Companion — GTA VI platinum guide</title>
 <link rel="stylesheet" href="style.css">
+<link rel="icon" href="favicon.png">
 </head>
 <body>
-<header>
-  <h1>GTA VI trophy checklist</h1>
-  <p id="progress">0 of 55 earned</p>
+<header class="masthead">
+  <div>
+    <h1>Vice City Trophy Companion</h1>
+    <p class="tagline">Every GTA VI trophy on PlayStation 5, with a cited method, a roadmap and a tracker. 55 trophies: 1 platinum, 2 gold, 6 silver, 46 bronze. No online trophies, one playthrough, about 200 to 300 hours.</p>
+  </div>
+  <div class="progress-box" aria-live="polite">
+    <div class="progress-line"><span id="progress-text">0 of 55 earned</span><span id="progress-pct">0%</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <p class="next-up" id="next-up">Next up: finish the story.</p>
+  </div>
 </header>
-<div class="controls">
-  <label>Grade <select id="grade"><option value="all">All</option><option value="platinum">Platinum</option><option value="gold">Gold</option><option value="silver">Silver</option><option value="bronze">Bronze</option></select></label>
-  <button id="export" type="button">Export progress</button>
-  <label class="import">Import progress <input id="import" type="file" accept="application/json"></label>
-</div>
-<table>
-  <thead><tr><th>Earned</th><th>Trophy</th><th>Grade</th><th>How to get it</th></tr></thead>
-  <tbody id="rows"></tbody>
-</table>
+
+<aside class="checked-note">
+  <strong>How this guide was checked (19 Nov 2026).</strong>
+  Every method below was read in at least two independent guides — PowerPyx plus Push Square, GTABase, sixshore or gtasix.how — and written here in fresh words, never copied.
+  Three trophies that were unconfirmed at launch now have methods. Two are still marked NOT YET KNOWN, with their lead labelled as a lead, never as fact.
+  Where sources disagreed — the one possibly missable trophy, the exact animal for Fair Game — this guide says so.
+</aside>
+
+<nav class="tabs" aria-label="Sections">
+  <button type="button" data-tab="checklist" class="tab active" aria-current="page">Checklist</button>
+  <button type="button" data-tab="roadmap" class="tab">Roadmap to platinum</button>
+  <button type="button" data-tab="missables" class="tab">Missables</button>
+</nav>
+
+<section id="panel-checklist" class="panel">
+  <div class="controls">
+    <label class="search-label">Search <input id="search" type="search" placeholder="Trophy, mission, place…" autocomplete="off"></label>
+    <label>Kind
+      <select id="kind">
+        <option value="all">All kinds</option>
+        <option value="story">Story</option>
+        <option value="missable">Missable</option>
+        <option value="collectibles">Collectibles</option>
+        <option value="activities">Activities</option>
+        <option value="side">Side quests</option>
+        <option value="crime">Crime &amp; robberies</option>
+        <option value="secrets">One-off secrets</option>
+        <option value="platinum">Platinum &amp; 100%</option>
+        <option value="online">Online</option>
+      </select>
+    </label>
+    <label>Grade
+      <select id="grade">
+        <option value="all">All grades</option>
+        <option value="platinum">Platinum</option>
+        <option value="gold">Gold</option>
+        <option value="silver">Silver</option>
+        <option value="bronze">Bronze</option>
+      </select>
+    </label>
+    <label class="spoiler-label"><input id="spoiler" type="checkbox"> Hide story spoilers</label>
+    <button id="export" type="button">Export progress</button>
+    <label class="import-label">Import progress <input id="import" type="file" accept="application/json,.json"></label>
+    <button id="reset" type="button">Clear ticks</button>
+  </div>
+  <p class="count-line" id="count-line"></p>
+  <p class="empty-note" id="empty-note" hidden></p>
+  <div id="trophy-list" class="trophy-list"></div>
+</section>
+
+<section id="panel-roadmap" class="panel" hidden>
+  <h2>Roadmap to the platinum</h2>
+  <p>One playthrough, no difficulty setting, no mission replay. PowerPyx puts the run at about 200 hours; Push Square says 250 to 300. The story is 60 to 80 of those hours. Do the stages in order.</p>
+  <div id="roadmap-stages"></div>
+</section>
+
+<section id="panel-missables" class="panel" hidden>
+  <h2>Missables</h2>
+  <div id="missable-list"></div>
+  <h3>Save advice</h3>
+  <p>The game has 15 manual save slots plus 1 autosave, and no mission replay. PowerPyx suggests keeping a save at the start and end of each chapter (10 saves), then rotating the rest during free-roam cleanup. GTABase agrees: save before every chapter and before the final mission.</p>
+  <h3>What looks missable but is not</h3>
+  <p>Many optional missions vanish after a while, some quest givers go quiet for part of the story (Kenton does), some fences leave for good, and a few magazine collectibles sit in story buildings that close. PowerPyx says none of that touches any trophy or the 100% checklist: there are far more optional missions than the 100 needed, every trophy quest giver comes back, and the magazines also spawn elsewhere.</p>
+  <h3>Two warnings that are not about trophies</h3>
+  <p>Cheats switch trophies off and stop the game saving (PowerPyx and Push Square agree), so keep them off your platinum save. And the Irredeemable criminal profile is permanent and makes police far more aggressive: you can still earn everything, but the cleanup gets harder.</p>
+</section>
+
+<footer>
+  <p>Names and descriptions are shown as PlayStation publishes them. Guides are this companion's own words, with the sources named beside each one. No Rockstar artwork is used. Works offline: everything on this page is a file in this guide.</p>
+</footer>
 <script type="module" src="app.js"></script>
 </body>
 </html>
