@@ -1,76 +1,81 @@
-// The roadmap to the platinum and the missables panel, both built from the
-// trophy data: stages in earning order, and the one trophy that may be missed.
-const STAGES = [
+// roadmap.js — the road to the platinum, and the missables page.
+//
+// Both are built from the trophy data itself: each stage lists the
+// trophies whose stage it is, and the missables page lists the trophies
+// whose missable flag is set, with the save habits that cover the rest.
+// The stage texts come from the published roadmaps (PowerPyx, Push
+// Square, GTABase) as cited on the Sources tab.
+
+export const STAGES = [
   {
     stage: 1,
-    title: 'Stage 1: Story and side quests — about 60 to 80 hours',
-    text: 'Play the story at your own pace and take optional missions as they appear. Scan every new vehicle with the WAiNK app (100% needs 200 of 277), study new animals through the binoculars (100% needs 100 of 255), and do the Chapter 1 meditation the moment it is offered. There are no mission medals this time, so nothing about how you play a mission matters.',
+    title: 'Stage 1 — Play the story (60–80 hours)',
+    text: 'Finish the five chapters and enjoy the campaign. Story and named-mission trophies pop as you go, and there are no mission gold medals to chase. Along the way, scan vehicles with WAiNK and study animals with binoculars whenever you meet them — the 100% checklist counts progress made during the story. Do the Chapter 1 balcony meditation the moment Lucia offers it (see Missables), and keep a manual save at the start and end of every chapter: there is no mission replay and no chapter select.',
   },
   {
     stage: 2,
-    title: 'Stage 2: The 100% checklist — about 100 hours',
-    text: 'After the credits, open Progress, then Stats, then 100% Completion and work through what is left. PowerPyx calls the list lenient, closer to 60% of true completion; Push Square says you still need almost everything, including 15 of the 18 card sets. Robberies, underwater finds, shooting ranges, drone races and Bret\u2019s quests need everything; the rest need only a share: 70 of 80 challenges, 15 of 18 meditations, 300 stunts, 100 optional missions.',
+    title: 'Stage 2 — The 100% checklist and the open-world grind (about 100 hours)',
+    text: 'After the credits, open Progress, then Stats, then 100% Completion. Work the checklist: every robbery, bank vault and gang operation, every underwater discovery, every shooting range gold, every drone race, every Bret quest, 200 of 277 vehicles scanned, 100 of 255 animals studied, 15 of 18 card sets, and 70 of the 80 challenges. The checklist is lenient — about 60% true completion — so skip the hardest ten challenges. Most of the grind trophies land here.',
   },
   {
     stage: 3,
-    title: 'Stage 3: Strangers & Freaks and cleanup — about 10 hours',
-    text: 'Stranger strands are not part of 100%, so finish the 8 that count, mop up any trophy left on the list, and the platinum follows. The two trophies still marked NOT YET KNOWN sit here too: check back once a guide confirms them.',
+    title: 'Stage 3 — Strangers & Freaks and the leftovers (about 10 hours)',
+    text: 'Finish the eight stranger strands and whatever is still open: Andy, Kenton, Billy, Randy, Tyrone and Bret, each to their final mission. After the story every quest giver tied to a trophy comes back, so half-finished strands can be closed in free-roam. The platinum pops the moment the last trophy does.',
   },
 ];
 
-export function renderRoadmap(trophies, earned) {
-  const host = document.getElementById('roadmap-stages');
-  host.replaceChildren();
-  for (const stage of STAGES) {
-    const members = trophies
-      .filter((trophy) => trophy.stage === stage.stage)
-      .sort((a, b) => a.id - b.id);
-    const box = document.createElement('div');
-    box.className = 'stage';
+export function renderRoadmap(container, trophies, earned) {
+  container.innerHTML = '';
+  for (const item of STAGES) {
+    const members = trophies.filter((t) => t.stage === item.stage);
+    const done = members.filter((t) => earned.has(t.id)).length;
+    const card = document.createElement('article');
+    card.className = 'roadmap-stage';
     const heading = document.createElement('h3');
-    heading.textContent = stage.title;
-    box.append(heading);
-    const blurb = document.createElement('p');
-    blurb.textContent = stage.text;
-    box.append(blurb);
-    const list = document.createElement('ul');
+    heading.textContent = item.title;
+    const count = document.createElement('p');
+    count.className = 'stage-count';
+    count.textContent = `${done} of ${members.length} trophies in this stage earned.`;
+    const body = document.createElement('p');
+    body.textContent = item.text;
+    const chips = document.createElement('div');
+    chips.className = 'stage-trophies';
     for (const trophy of members) {
-      const item = document.createElement('li');
-      if (earned.has(trophy.name)) item.className = 'done';
-      item.textContent = `${earned.has(trophy.name) ? '✓ ' : ''}${trophy.name} (${trophy.grade})`;
-      list.append(item);
+      const chip = document.createElement('span');
+      if (earned.has(trophy.id)) chip.className = 'done';
+      chip.textContent = (earned.has(trophy.id) ? '✓ ' : '') + trophy.name;
+      chips.appendChild(chip);
     }
-    box.append(list);
-    host.append(box);
+    card.append(heading, count, body, chips);
+    container.appendChild(card);
   }
 }
 
-export function renderMissables(trophies, earned) {
-  const host = document.getElementById('missable-list');
-  host.replaceChildren();
-  const flagged = trophies.filter((trophy) => trophy.missable);
+export function renderMissables(container, trophies, earned) {
+  container.innerHTML = '';
+  const flagged = trophies.filter((t) => t.missable);
   if (flagged.length === 0) {
-    host.textContent = 'No trophy is flagged missable.';
+    const none = document.createElement('p');
+    none.textContent = 'No trophy in this guide is flagged as missable.';
+    container.appendChild(none);
     return;
   }
   for (const trophy of flagged) {
-    const card = document.createElement('div');
+    const card = document.createElement('article');
     card.className = 'missable-card';
     const heading = document.createElement('h3');
-    heading.textContent = `${trophy.name} — possibly missable`;
-    card.append(heading);
-    const guide = document.createElement('p');
-    guide.textContent = trophy.guide;
-    card.append(guide);
-    const note = document.createElement('p');
-    note.textContent = 'The sources disagree here, and this guide does not hide it: PowerPyx and GTABase flag this one as possibly missable, while Push Square lists no known missables. Doing the Chapter 1 meditation costs a minute and removes the risk either way.';
-    card.append(note);
-    const state = document.createElement('p');
-    state.textContent = earned.has(trophy.name) ? 'Earned ✓' : 'Not earned yet.';
-    card.append(state);
-    host.append(card);
+    heading.textContent = `⚠ ${trophy.name} — possibly missable`;
+    const body = document.createElement('p');
+    body.textContent = trophy.guide;
+    const sources = document.createElement('p');
+    sources.className = 'note';
+    sources.textContent =
+      'Sources: PowerPyx and KeenGamer agree this is the one trophy to watch; Push Square and GTABase give the same roadmap. See the trophy’s guide for the full detail.';
+    card.append(heading, body, sources);
+    container.appendChild(card);
   }
-  const others = document.createElement('p');
-  others.textContent = 'Every other trophy can be earned after the story in free roam. PowerPyx and GTABase agree on that, and Push Square\u2019s guide lists no missables at all.';
-  host.append(others);
+  const reassurance = document.createElement('p');
+  reassurance.textContent =
+    'Everything else can be earned after the story: free-roam stays open, the 100% checklist only appears after the credits, and every quest giver tied to a trophy returns. The guides agree there is no other missable trophy — only this one is flagged, and even it is “potentially” missable, because whether the first meditation counts is still unsettled.';
+  container.appendChild(reassurance);
 }

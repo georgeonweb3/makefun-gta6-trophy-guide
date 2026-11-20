@@ -1,157 +1,173 @@
-// The checklist: one card per trophy with its official name, description and
-// grade, a tick box, its guide and its sources. Also the progress bar and the
-// next-up hint, which names the first unearned trophy in roadmap order.
-import { KIND_LABELS, trophyIsSpoilerHidden, visibleTrophies } from './filters.js';
+// tracker.js — the checklist, the detail pane, and the progress header.
+//
+// The list is rendered from the trophy data with the filters applied;
+// each row carries a checkbox that toggles the trophy earned, and
+// clicking a row opens its guide in the detail pane. Spoiler-masked
+// trophies show a placeholder name and description until earned, and
+// their guide stays closed until then as well.
+
+import { KIND_LABELS, applyFilters, gradeCounts, trophyIsHiddenBySpoiler, visibleDescription, visibleName } from './filters.js';
+
+const NEXT_UP = [
+  { when: (earned) => earned.size === 0, text: 'Next up: play the story — the first trophies come free.' },
+  { when: (earned) => !earned.has(7), text: 'Next up: finish the story to unlock the 100% checklist.' },
+  { when: (earned) => !earned.has(14), text: 'Next up: work the 100% checklist — A Long Road is the long pole.' },
+  { when: (earned) => !earned.has(25), text: 'Next up: finish the stranger strands for Strangers & Freaks.' },
+  { when: () => true, text: 'Next up: the platinum — one trophy left.' },
+];
+
+export function nextUpText(earned, total) {
+  if (earned.size >= total) return 'Platinum earned — every trophy is yours. Leonida Legend.';
+  for (const step of NEXT_UP) {
+    if (step.when(earned)) return step.text;
+  }
+  return 'Keep going.';
+}
 
 export function renderProgress(trophies, earned) {
-  const done = trophies.filter((trophy) => earned.has(trophy.name)).length;
   const total = trophies.length;
-  const pct = total ? Math.round((done / total) * 100) : 0;
-  document.getElementById('progress-text').textContent = `${done} of ${total} earned`;
+  const pct = total === 0 ? 0 : Math.round((earned.size / total) * 100);
+  document.getElementById('progress-text').textContent = `${earned.size} of ${total} earned`;
   document.getElementById('progress-pct').textContent = `${pct}%`;
   document.getElementById('progress-fill').style.width = `${pct}%`;
+  document.getElementById('next-up').textContent = nextUpText(earned, total);
+  const counts = gradeCounts(trophies, earned);
+  const parts = ['platinum', 'gold', 'silver', 'bronze'].map(
+    (grade) => `${counts[grade][0]}/${counts[grade][1]} ${grade}`,
+  );
+  document.getElementById('progress-sub').textContent = `By grade: ${parts.join(' · ')}.`;
 }
 
-export function nextUpTrophy(trophies, earned) {
-  const rest = trophies.filter((trophy) => !earned.has(trophy.name));
-  if (rest.length === 0) return null;
-  if (rest.length === 1) return rest[0];
-  const nonPlatinum = rest.filter((trophy) => trophy.name !== 'Vice Got a Price!');
-  const ordered = [...nonPlatinum].sort((a, b) => a.stage - b.stage || a.id - b.id);
-  return ordered[0];
+export function renderList(trophies, state, onToggle, onSelect) {
+  const list = document.getElementById('trophy-list');
+  const shown = applyFilters(trophies, state);
+  list.innerHTML = '';
+  for (const trophy of shown) {
+    const item = document.createElement('li');
+    item.className = 'trophy' + (state.earned.has(trophy.id) ? ' earned' : '') +
+      (state.selectedId === trophy.id ? ' selected' : '');
+    const head = document.createElement('div');
+    head.className = 'trophy-head';
+    const check = document.createElement('label');
+    check.className = 'trophy-check';
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.checked = state.earned.has(trophy.id);
+    box.setAttribute('aria-label', `Mark ${trophy.name} as earned`);
+    box.addEventListener('click', (event) => {
+      event.stopPropagation();
+      onToggle(trophy.id, box.checked);
+    });
+    check.appendChild(box);
+    const name = document.createElement('span');
+    name.className = 'trophy-name';
+    name.textContent = visibleName(trophy, state.earned, state.spoilerOn);
+    const grade = document.createElement('span');
+    grade.className = `grade ${trophy.grade}`;
+    grade.textContent = trophy.grade;
+    head.append(name, grade, check);
+    const desc = document.createElement('p');
+    desc.className = 'trophy-desc';
+    desc.textContent = visibleDescription(trophy, state.earned, state.spoilerOn);
+    const tags = document.createElement('div');
+    tags.className = 'trophy-tags';
+    const kindTag = document.createElement('span');
+    kindTag.className = 'tag';
+    kindTag.textContent = KIND_LABELS[trophy.kind] ?? trophy.kind;
+    tags.appendChild(kindTag);
+    if (trophy.hidden) {
+      const hiddenTag = document.createElement('span');
+      hiddenTag.className = 'tag hidden-t';
+      hiddenTag.textContent = 'Hidden on PSN';
+      tags.appendChild(hiddenTag);
+    }
+    if (trophy.missable) {
+      const missTag = document.createElement('span');
+      missTag.className = 'tag missable';
+      missTag.textContent = '⚠ Possibly missable';
+      tags.appendChild(missTag);
+    }
+    if (trophy.count) {
+      const countTag = document.createElement('span');
+      countTag.className = 'tag';
+      countTag.textContent = `Target: ${trophy.count.toLocaleString('en-US')}`;
+      tags.appendChild(countTag);
+    }
+    item.append(head, desc, tags);
+    item.addEventListener('click', () => onSelect(trophy.id));
+    list.appendChild(item);
+  }
+  const meta = document.getElementById('list-meta');
+  meta.textContent = shown.length === trophies.length
+    ? `Showing all ${trophies.length} trophies.`
+    : `Showing ${shown.length} of ${trophies.length} trophies.`;
 }
 
-export function renderNextUp(trophies, earned) {
-  const next = nextUpTrophy(trophies, earned);
-  const line = document.getElementById('next-up');
-  if (!next) {
-    line.textContent = 'Platinum earned: you are a Leonida Legend.';
+export function renderDetail(trophy, earned, spoilerOn) {
+  const panel = document.getElementById('detail');
+  panel.innerHTML = '';
+  if (!trophy) {
+    const empty = document.createElement('p');
+    empty.className = 'detail-empty';
+    empty.textContent = 'Pick a trophy on the left to read its guide and sources here.';
+    panel.appendChild(empty);
     return;
   }
-  line.textContent = `Next up: ${next.name} — ${next.description}`;
-}
-
-export function renderChecklist(trophies, state, onToggleEarned) {
-  const list = document.getElementById('trophy-list');
-  const shown = visibleTrophies(trophies, state);
-  const countLine = document.getElementById('count-line');
-  const emptyNote = document.getElementById('empty-note');
-  const earnedCount = trophies.filter((t) => state.earned.has(t.name)).length;
-  countLine.textContent = `Showing ${shown.length} of ${trophies.length} trophies · ${earnedCount} earned`;
-
-  if (state.kind === 'online') {
-    emptyNote.hidden = false;
-    emptyNote.textContent = 'No online trophies in GTA VI: all 55 are single-player. PowerPyx and Push Square both list 0 online trophies, and the platinum needs no multiplayer or DLC.';
-  } else if (shown.length === 0) {
-    emptyNote.hidden = false;
-    emptyNote.textContent = 'No trophies match these filters. Clear the search or pick another kind.';
-  } else {
-    emptyNote.hidden = true;
+  if (trophyIsHiddenBySpoiler(trophy, earned, spoilerOn)) {
+    const heading = document.createElement('h2');
+    heading.textContent = 'Hidden story trophy';
+    const body = document.createElement('p');
+    body.textContent = 'Spoilers are hidden. Earn this trophy in the game — or turn the spoiler setting off — to read its name, description and guide here.';
+    panel.append(heading, body);
+    return;
   }
-
-  list.replaceChildren();
-  for (const trophy of shown) {
-    list.append(buildTrophyCard(trophy, state, onToggleEarned));
+  const heading = document.createElement('h2');
+  heading.textContent = trophy.name;
+  const official = document.createElement('div');
+  official.className = 'official';
+  const gradeLine = document.createElement('p');
+  const grade = document.createElement('strong');
+  grade.textContent = trophy.grade[0].toUpperCase() + trophy.grade.slice(1);
+  gradeLine.appendChild(grade);
+  const descLine = document.createElement('p');
+  descLine.textContent = trophy.description;
+  const kindLine = document.createElement('p');
+  kindLine.className = 'note';
+  kindLine.textContent =
+    `${KIND_LABELS[trophy.kind] ?? trophy.kind}` +
+    (trophy.hidden ? ' · Hidden on PSN until earned' : '') +
+    (trophy.missable ? ' · Possibly missable' : '') +
+    (trophy.count ? ` · PSN target: ${trophy.count.toLocaleString('en-US')}` : '') +
+    (earned.has(trophy.id) ? ' · Earned ✓' : ' · Not earned yet');
+  official.append(gradeLine, descLine, kindLine);
+  const guideHeading = document.createElement('h3');
+  guideHeading.textContent = 'How to earn it';
+  const guide = document.createElement('p');
+  guide.className = 'guide-text';
+  guide.textContent = trophy.guide;
+  panel.append(heading, official, guideHeading, guide);
+  if (trophy.uncertain) {
+    const warn = document.createElement('p');
+    warn.className = 'warn';
+    warn.textContent = 'Still being confirmed: the guide sites have not yet settled on one exact method for this trophy. This guide gives the best reading of the official description and labels it as a lead, not a fact.';
+    panel.appendChild(warn);
   }
-}
-
-function buildTrophyCard(trophy, state, onToggleEarned) {
-  const earned = state.earned.has(trophy.name);
-  const hidden = trophyIsSpoilerHidden(trophy, state.spoiler, state.earned);
-  const card = document.createElement('article');
-  card.className = `trophy${earned ? ' earned' : ''}`;
-  card.dataset.name = trophy.name;
-
-  const box = document.createElement('input');
-  box.type = 'checkbox';
-  box.checked = earned;
-  box.setAttribute('aria-label', `Earned: ${trophy.name}`);
-  box.addEventListener('change', () => onToggleEarned(trophy.name, box.checked));
-  card.append(box);
-
-  const body = document.createElement('div');
-  const name = document.createElement('div');
-  name.className = 'trophy-name';
-  name.textContent = hidden ? 'Hidden story trophy — earn it to reveal' : trophy.name;
-  body.append(name);
-
-  const desc = document.createElement('div');
-  desc.className = hidden ? 'spoiler-hidden' : 'trophy-desc';
-  desc.textContent = hidden ? 'Spoiler hidden until earned.' : trophy.description;
-  body.append(desc);
-
-  const badges = document.createElement('div');
-  badges.className = 'badges';
-  badges.append(gradeBadge(trophy.grade));
-  badges.append(textBadge(KIND_LABELS[trophy.kind] || trophy.kind));
-  if (trophy.missable) badges.append(missableBadge());
-  if (trophy.guide.startsWith('NOT YET KNOWN')) badges.append(unknownBadge());
-  body.append(badges);
-
-  const toggle = document.createElement('button');
-  toggle.type = 'button';
-  toggle.className = 'guide-toggle';
-  toggle.textContent = hidden ? 'Guide hidden (spoiler)' : 'Show guide + sources';
-  toggle.disabled = hidden;
-  body.append(toggle);
-
-  const guide = document.createElement('div');
-  guide.className = 'guide';
-  guide.hidden = true;
-  const guideText = document.createElement('p');
-  guideText.textContent = trophy.guide;
-  guide.append(guideText);
-  const sources = document.createElement('p');
-  sources.className = 'sources';
-  sources.textContent = 'Sources: ';
-  trophy.sources.forEach((source, index) => {
-    if (index > 0) sources.append(document.createTextNode(' · '));
+  const sourcesHeading = document.createElement('h3');
+  sourcesHeading.textContent = 'Sources';
+  const sourcesList = document.createElement('ul');
+  sourcesList.className = 'sources';
+  for (const source of trophy.sources ?? []) {
+    const item = document.createElement('li');
     const link = document.createElement('a');
     link.href = source.url;
     link.target = '_blank';
     link.rel = 'noopener';
     link.textContent = source.name;
-    sources.append(link);
-  });
-  guide.append(sources);
-  body.append(guide);
-
-  toggle.addEventListener('click', () => {
-    guide.hidden = !guide.hidden;
-    toggle.textContent = guide.hidden ? 'Show guide + sources' : 'Hide guide';
-  });
-  if (state.openGuides.has(trophy.name)) {
-    guide.hidden = false;
-    toggle.textContent = 'Hide guide';
+    item.appendChild(link);
+    sourcesList.appendChild(item);
   }
-  card.append(body);
-  return card;
-}
-
-function gradeBadge(grade) {
-  const badge = document.createElement('span');
-  badge.className = `badge grade-${grade}`;
-  badge.textContent = grade;
-  return badge;
-}
-
-function textBadge(label) {
-  const badge = document.createElement('span');
-  badge.className = 'badge';
-  badge.textContent = label;
-  return badge;
-}
-
-function missableBadge() {
-  const badge = document.createElement('span');
-  badge.className = 'badge missable';
-  badge.textContent = 'Possibly missable';
-  return badge;
-}
-
-function unknownBadge() {
-  const badge = document.createElement('span');
-  badge.className = 'badge unknown';
-  badge.textContent = 'Not yet known';
-  return badge;
+  const note = document.createElement('p');
+  note.className = 'note';
+  note.textContent = 'Guides are written here in fresh words from the sources above; the official name and description are shown as PlayStation publishes them.';
+  panel.append(sourcesHeading, sourcesList, note);
 }

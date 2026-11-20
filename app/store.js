@@ -1,48 +1,75 @@
-// Progress and settings storage for the Vice City Trophy Companion.
-// Progress lives in localStorage under this guide's own keys, and can be
-// exported to a file and imported back. Nothing leaves the browser.
-export const PROGRESS_KEY = 'vice-city-companion-progress-v1';
-export const SETTINGS_KEY = 'vice-city-companion-settings-v1';
+// store.js — saving progress in the browser, nothing sent anywhere.
+//
+// Progress lives in localStorage under one key, as a JSON list of earned
+// trophy ids. Export downloads that list as a file; import reads such a
+// file back. A ?demo=1 address seeds a fixed example set (used for the
+// entry's screenshots) so the first paint already shows progress.
+
+export const STORAGE_KEY = 'vice-city-trophy-companion-v1';
+
+// A fixed example set for screenshots: the story through Chapter 2, the
+// first named missions, and a few early activities — 17 of 55 earned.
+export const DEMO_EARNED = [2, 3, 4, 8, 9, 10, 15, 16, 21, 28, 35, 39, 41, 46, 51, 53, 55];
 
 export function loadProgress() {
   try {
-    const raw = localStorage.getItem(PROGRESS_KEY);
-    const names = raw ? JSON.parse(raw) : [];
-    return new Set(Array.isArray(names) ? names : []);
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((id) => Number.isInteger(id)));
   } catch {
     return new Set();
   }
 }
 
 export function saveProgress(earned) {
-  localStorage.setItem(PROGRESS_KEY, JSON.stringify([...earned]));
-}
-
-export function loadSettings() {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    const parsed = raw ? JSON.parse(raw) : {};
-    return { spoiler: Boolean(parsed && parsed.spoiler) };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...earned].sort((a, b) => a - b)));
   } catch {
-    return { spoiler: false };
+    // A full or blocked store just means progress is not kept this visit.
   }
 }
 
-export function saveSettings(settings) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+export function clearProgress() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Nothing to clear.
+  }
 }
 
-export function exportProgress(earned) {
-  const blob = new Blob([JSON.stringify([...earned], null, 2)], { type: 'application/json' });
+export function seedDemoProgress() {
+  const earned = new Set(DEMO_EARNED);
+  saveProgress(earned);
+  return earned;
+}
+
+export function exportProgress(earned, trophies) {
+  const payload = {
+    app: 'Vice City Trophy Companion',
+    exportedAt: new Date().toISOString(),
+    total: trophies.length,
+    earned: [...earned].sort((a, b) => a - b),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'vice-city-trophy-progress.json';
+  link.href = url;
+  link.download = 'vice-city-trophies-progress.json';
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(link.href);
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
-export async function readImportedProgress(file, knownNames) {
-  const parsed = JSON.parse(await file.text());
-  if (!Array.isArray(parsed)) throw new Error('not a list');
-  return new Set(parsed.filter((name) => knownNames.has(name)));
+export async function importProgressFile(file, trophyIds) {
+  const text = await file.text();
+  const parsed = JSON.parse(text);
+  const list = Array.isArray(parsed) ? parsed : parsed.earned;
+  if (!Array.isArray(list)) throw new Error('That file does not hold a list of earned trophies.');
+  const known = new Set(trophyIds);
+  const earned = new Set(list.filter((id) => Number.isInteger(id) && known.has(id)));
+  saveProgress(earned);
+  return earned;
 }

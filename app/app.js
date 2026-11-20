@@ -1,108 +1,145 @@
-// Vice City Trophy Companion: load the 55 trophies, wire the checklist,
-// filters, roadmap and missables, and keep progress in the browser.
-import {
-  loadProgress, saveProgress, loadSettings, saveSettings,
-  exportProgress, readImportedProgress,
-} from './store.js';
-import { renderChecklist, renderProgress, renderNextUp } from './tracker.js';
-import { renderRoadmap, renderMissables } from './roadmap.js';
+// app.js — boot and wiring for the Vice City Trophy Companion.
+//
+// Loads data/trophies.json, restores saved progress, wires the tabs,
+// the filters, the spoiler setting and export/import, and renders the
+// checklist, the roadmap and the missables page. Address parameters
+// let a view be deep-linked: ?tab=roadmap|missables|sources,
+// ?spoiler=1 to turn the spoiler setting on, ?demo=1 to seed the
+// example progress used for the entry's screenshots, and ?open=<id>
+// to open one trophy's guide.
+
+import { clearProgress, exportProgress, importProgressFile, loadProgress, saveProgress, seedDemoProgress } from './store.js';
+import { renderDetail, renderList, renderProgress } from './tracker.js';
+import { renderMissables, renderRoadmap } from './roadmap.js';
 
 const state = {
   trophies: [],
-  earned: loadProgress(),
-  settings: loadSettings(),
+  earned: new Set(),
   search: '',
   kind: 'all',
   grade: 'all',
-  spoiler: false,
-  openGuides: new Set(),
+  earnedOnly: false,
+  spoilerOn: false,
+  selectedId: null,
 };
-state.spoiler = state.settings.spoiler;
 
 function renderAll() {
   renderProgress(state.trophies, state.earned);
-  renderNextUp(state.trophies, state.earned);
-  renderChecklist(state.trophies, state, toggleEarned);
-  renderRoadmap(state.trophies, state.earned);
-  renderMissables(state.trophies, state.earned);
+  renderList(state.trophies, state, toggleEarned, selectTrophy);
+  const selected = state.trophies.find((t) => t.id === state.selectedId) ?? null;
+  renderDetail(selected, state.earned, state.spoilerOn);
+  renderRoadmap(document.getElementById('roadmap'), state.trophies, state.earned);
+  renderMissables(document.getElementById('missables'), state.trophies, state.earned);
 }
 
-function toggleEarned(name, checked) {
-  if (checked) state.earned.add(name);
-  else state.earned.delete(name);
+function toggleEarned(id, checked) {
+  if (checked) state.earned.add(id);
+  else state.earned.delete(id);
   saveProgress(state.earned);
   renderAll();
 }
 
-function switchTab(tab) {
+function selectTrophy(id) {
+  state.selectedId = id;
+  renderList(state.trophies, state, toggleEarned, selectTrophy);
+  const selected = state.trophies.find((t) => t.id === id) ?? null;
+  renderDetail(selected, state.earned, state.spoilerOn);
+}
+
+function showTab(name) {
   for (const button of document.querySelectorAll('.tab')) {
-    const active = button.dataset.tab === tab;
+    const active = button.dataset.tab === name;
     button.classList.toggle('active', active);
     if (active) button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
   }
   for (const panel of document.querySelectorAll('.panel')) {
-    panel.hidden = panel.id !== `panel-${tab}`;
+    panel.hidden = panel.id !== `panel-${name}`;
   }
 }
 
-async function bootCompanion() {
+function buildSourceList(sources) {
+  const list = document.getElementById('source-list');
+  list.innerHTML = '';
+  for (const source of sources) {
+    const item = document.createElement('li');
+    const link = document.createElement('a');
+    link.href = source.url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = source.name;
+    item.appendChild(link);
+    list.appendChild(item);
+  }
+}
+
+async function boot() {
+  const params = new URLSearchParams(window.location.search);
   const response = await fetch('data/trophies.json');
-  const doc = await response.json();
-  state.trophies = doc.trophies;
+  const data = await response.json();
+  state.trophies = data.trophies;
+  state.earned = params.has('demo') ? seedDemoProgress() : loadProgress();
 
-  const search = document.getElementById('search');
-  const kind = document.getElementById('kind');
-  const grade = document.getElementById('grade');
-  const spoiler = document.getElementById('spoiler');
-  spoiler.checked = state.spoiler;
+  state.spoilerOn = params.get('spoiler') === '1';
+  document.getElementById('spoiler-toggle').checked = state.spoilerOn;
 
-  search.addEventListener('input', () => {
-    state.search = search.value;
-    renderChecklist(state.trophies, state, toggleEarned);
-  });
-  kind.addEventListener('change', () => {
-    state.kind = kind.value;
-    renderChecklist(state.trophies, state, toggleEarned);
-  });
-  grade.addEventListener('change', () => {
-    state.grade = grade.value;
-    renderChecklist(state.trophies, state, toggleEarned);
-  });
-  spoiler.addEventListener('change', () => {
-    state.spoiler = spoiler.checked;
-    saveSettings({ spoiler: state.spoiler });
-    renderChecklist(state.trophies, state, toggleEarned);
-  });
+  const openId = Number(params.get('open'));
+  state.selectedId = Number.isInteger(openId) && state.trophies.some((t) => t.id === openId)
+    ? openId
+    : state.trophies[0].id;
 
-  document.getElementById('export').addEventListener('click', () => {
-    exportProgress(state.earned);
-  });
-  document.getElementById('import').addEventListener('change', async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    try {
-      const known = new Set(state.trophies.map((trophy) => trophy.name));
-      state.earned = await readImportedProgress(file, known);
-      saveProgress(state.earned);
-      renderAll();
-    } catch {
-      alert('That file is not a trophy-progress export from this guide.');
-    }
-    event.target.value = '';
-  });
-  document.getElementById('reset').addEventListener('click', () => {
-    if (!confirm('Clear every tick? Your exported file stays safe if you saved one.')) return;
-    state.earned = new Set();
-    saveProgress(state.earned);
-    renderAll();
-  });
+  buildSourceList(data.sources ?? []);
+  renderAll();
 
   for (const button of document.querySelectorAll('.tab')) {
-    button.addEventListener('click', () => switchTab(button.dataset.tab));
+    button.addEventListener('click', () => showTab(button.dataset.tab));
   }
+  const tabParam = params.get('tab');
+  if (['checklist', 'roadmap', 'missables', 'sources'].includes(tabParam)) showTab(tabParam);
 
-  renderAll();
+  document.getElementById('search').addEventListener('input', (event) => {
+    state.search = event.target.value;
+    renderList(state.trophies, state, toggleEarned, selectTrophy);
+  });
+  document.getElementById('kind-filter').addEventListener('change', (event) => {
+    state.kind = event.target.value;
+    renderList(state.trophies, state, toggleEarned, selectTrophy);
+  });
+  document.getElementById('grade-filter').addEventListener('change', (event) => {
+    state.grade = event.target.value;
+    renderList(state.trophies, state, toggleEarned, selectTrophy);
+  });
+  document.getElementById('earned-only').addEventListener('change', (event) => {
+    state.earnedOnly = event.target.checked;
+    renderList(state.trophies, state, toggleEarned, selectTrophy);
+  });
+  document.getElementById('spoiler-toggle').addEventListener('change', (event) => {
+    state.spoilerOn = event.target.checked;
+    renderAll();
+  });
+  document.getElementById('export-btn').addEventListener('click', () => {
+    exportProgress(state.earned, state.trophies);
+  });
+  const importFile = document.getElementById('import-file');
+  document.getElementById('import-btn').addEventListener('click', () => importFile.click());
+  importFile.addEventListener('change', async () => {
+    const file = importFile.files[0];
+    if (!file) return;
+    try {
+      state.earned = await importProgressFile(file, state.trophies.map((t) => t.id));
+      renderAll();
+    } catch (error) {
+      window.alert(`Could not import that file: ${error.message}`);
+    }
+    importFile.value = '';
+  });
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    if (window.confirm('Clear all earned trophies?')) {
+      state.earned = new Set();
+      clearProgress();
+      renderAll();
+    }
+  });
 }
 
-bootCompanion();
+boot();
