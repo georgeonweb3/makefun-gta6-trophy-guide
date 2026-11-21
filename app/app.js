@@ -1,145 +1,152 @@
-// app.js — boot and wiring for the Vice City Trophy Companion.
-//
-// Loads data/trophies.json, restores saved progress, wires the tabs,
-// the filters, the spoiler setting and export/import, and renders the
-// checklist, the roadmap and the missables page. Address parameters
-// let a view be deep-linked: ?tab=roadmap|missables|sources,
-// ?spoiler=1 to turn the spoiler setting on, ?demo=1 to seed the
-// example progress used for the entry's screenshots, and ?open=<id>
-// to open one trophy's guide.
+// Leonida Trophy Companion — bootstrap. Loads the trophy data, wires the
+// toolbar, the tabs and the tracker, and renders the checklist. URL params
+// drive the views screenshots use: ?tab=roadmap|missables|sources,
+// ?spoiler=1, ?demo=1 (a seeded in-memory save), ?open=<id> (open a guide).
 
-import { clearProgress, exportProgress, importProgressFile, loadProgress, saveProgress, seedDemoProgress } from './store.js';
-import { renderDetail, renderList, renderProgress } from './tracker.js';
-import { renderMissables, renderRoadmap } from './roadmap.js';
+import { createStore, downloadText } from './store.js';
+import { createFilterState, trophyMatches, describeFilter } from './filters.js';
+import { renderCards } from './trophies.js';
+import { renderRoadmap, renderMissables } from './roadmap.js';
 
-const state = {
-  trophies: [],
-  earned: new Set(),
-  search: '',
-  kind: 'all',
-  grade: 'all',
-  earnedOnly: false,
-  spoilerOn: false,
-  selectedId: null,
-};
+const params = new URLSearchParams(location.search);
+const demo = params.get('demo') === '1';
+const store = createStore(demo);
+const state = createFilterState();
+const openIds = new Set();
 
-function renderAll() {
-  renderProgress(state.trophies, state.earned);
-  renderList(state.trophies, state, toggleEarned, selectTrophy);
-  const selected = state.trophies.find((t) => t.id === state.selectedId) ?? null;
-  renderDetail(selected, state.earned, state.spoilerOn);
-  renderRoadmap(document.getElementById('roadmap'), state.trophies, state.earned);
-  renderMissables(document.getElementById('missables'), state.trophies, state.earned);
+const $ = (id) => document.getElementById(id);
+const cardsEl = $('cards');
+const listMetaEl = $('listMeta');
+const emptyEl = $('emptyState');
+
+let trophies = [];
+
+function renderProgress() {
+  const earned = store.earned.size;
+  $('earnedCount').textContent = String(earned);
+  $('progressFill').style.width = `${(earned / 55) * 100}%`;
 }
 
-function toggleEarned(id, checked) {
-  if (checked) state.earned.add(id);
-  else state.earned.delete(id);
-  saveProgress(state.earned);
-  renderAll();
+function renderList() {
+  const shown = trophies.filter((t) => trophyMatches(t, state, store.earned));
+  renderCards(cardsEl, shown, state, store, openIds, {
+    onToggleEarned(id) {
+      store.toggle(id);
+      renderProgress();
+      renderList();
+    },
+    onToggleGuide(id) {
+      if (openIds.has(id)) openIds.delete(id);
+      else openIds.add(id);
+      renderList();
+    },
+  });
+  listMetaEl.textContent = describeFilter(trophies, state, shown.length, store.earned.size);
+  emptyEl.hidden = shown.length > 0;
 }
 
-function selectTrophy(id) {
-  state.selectedId = id;
-  renderList(state.trophies, state, toggleEarned, selectTrophy);
-  const selected = state.trophies.find((t) => t.id === id) ?? null;
-  renderDetail(selected, state.earned, state.spoilerOn);
-}
-
-function showTab(name) {
+function activateTab(name) {
   for (const button of document.querySelectorAll('.tab')) {
-    const active = button.dataset.tab === name;
-    button.classList.toggle('active', active);
-    if (active) button.setAttribute('aria-current', 'page');
-    else button.removeAttribute('aria-current');
+    button.classList.toggle('active', button.dataset.tab === name);
   }
   for (const panel of document.querySelectorAll('.panel')) {
-    panel.hidden = panel.id !== `panel-${name}`;
+    panel.classList.toggle('active', panel.id === `panel-${name}`);
   }
 }
 
-function buildSourceList(sources) {
-  const list = document.getElementById('source-list');
-  list.innerHTML = '';
-  for (const source of sources) {
-    const item = document.createElement('li');
-    const link = document.createElement('a');
-    link.href = source.url;
-    link.target = '_blank';
-    link.rel = 'noopener';
-    link.textContent = source.name;
-    item.appendChild(link);
-    list.appendChild(item);
+function wireToolbar() {
+  $('search').addEventListener('input', (event) => {
+    state.query = event.target.value;
+    renderList();
+  });
+  $('gradeFilter').addEventListener('change', (event) => {
+    state.grade = event.target.value;
+    renderList();
+  });
+  $('kindChips').addEventListener('click', (event) => {
+    const chip = event.target.closest('.chip');
+    if (!chip) return;
+    state.kind = chip.dataset.kind;
+    for (const other of document.querySelectorAll('.chip')) {
+      other.classList.toggle('active', other === chip);
+    }
+    renderList();
+  });
+  $('spoilerToggle').addEventListener('change', (event) => {
+    state.spoiler = event.target.checked;
+    renderList();
+  });
+  $('hideEarned').addEventListener('change', (event) => {
+    state.hideEarned = event.target.checked;
+    renderList();
+  });
+  $('exportBtn').addEventListener('click', () => {
+    downloadText('leonida-trophy-progress.json', store.exportText());
+  });
+  $('importFile').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const result = store.importText(await file.text());
+    event.target.value = '';
+    if (result.ok) {
+      renderProgress();
+      renderList();
+      listMetaEl.textContent = `Imported ${result.count} earned trophies. ${describeFilter(trophies, state, trophies.filter((t) => trophyMatches(t, state, store.earned)).length, store.earned.size)}`;
+    } else {
+      listMetaEl.textContent = `Import failed: ${result.error}`;
+    }
+  });
+  $('resetBtn').addEventListener('click', () => {
+    if (!window.confirm('Clear every ticked trophy and start again?')) return;
+    store.setAll([]);
+    openIds.clear();
+    renderProgress();
+    renderList();
+  });
+  for (const button of document.querySelectorAll('.tab')) {
+    button.addEventListener('click', () => activateTab(button.dataset.tab));
   }
 }
 
 async function boot() {
-  const params = new URLSearchParams(window.location.search);
   const response = await fetch('data/trophies.json');
-  const data = await response.json();
-  state.trophies = data.trophies;
-  state.earned = params.has('demo') ? seedDemoProgress() : loadProgress();
+  const doc = await response.json();
+  trophies = doc.trophies;
 
-  state.spoilerOn = params.get('spoiler') === '1';
-  document.getElementById('spoiler-toggle').checked = state.spoilerOn;
+  renderRoadmap($('roadmapBody'), trophies);
+  renderMissables($('missablesBody'), trophies);
+  wireToolbar();
 
-  const openId = Number(params.get('open'));
-  state.selectedId = Number.isInteger(openId) && state.trophies.some((t) => t.id === openId)
-    ? openId
-    : state.trophies[0].id;
-
-  buildSourceList(data.sources ?? []);
-  renderAll();
-
-  for (const button of document.querySelectorAll('.tab')) {
-    button.addEventListener('click', () => showTab(button.dataset.tab));
+  if (params.get('spoiler') === '1') {
+    state.spoiler = true;
+    $('spoilerToggle').checked = true;
   }
-  const tabParam = params.get('tab');
-  if (['checklist', 'roadmap', 'missables', 'sources'].includes(tabParam)) showTab(tabParam);
+  const openId = Number.parseInt(params.get('open') || '', 10);
+  if (Number.isInteger(openId) && openId >= 1 && openId <= 55) openIds.add(openId);
 
-  document.getElementById('search').addEventListener('input', (event) => {
-    state.search = event.target.value;
-    renderList(state.trophies, state, toggleEarned, selectTrophy);
-  });
-  document.getElementById('kind-filter').addEventListener('change', (event) => {
-    state.kind = event.target.value;
-    renderList(state.trophies, state, toggleEarned, selectTrophy);
-  });
-  document.getElementById('grade-filter').addEventListener('change', (event) => {
-    state.grade = event.target.value;
-    renderList(state.trophies, state, toggleEarned, selectTrophy);
-  });
-  document.getElementById('earned-only').addEventListener('change', (event) => {
-    state.earnedOnly = event.target.checked;
-    renderList(state.trophies, state, toggleEarned, selectTrophy);
-  });
-  document.getElementById('spoiler-toggle').addEventListener('change', (event) => {
-    state.spoilerOn = event.target.checked;
-    renderAll();
-  });
-  document.getElementById('export-btn').addEventListener('click', () => {
-    exportProgress(state.earned, state.trophies);
-  });
-  const importFile = document.getElementById('import-file');
-  document.getElementById('import-btn').addEventListener('click', () => importFile.click());
-  importFile.addEventListener('change', async () => {
-    const file = importFile.files[0];
-    if (!file) return;
-    try {
-      state.earned = await importProgressFile(file, state.trophies.map((t) => t.id));
-      renderAll();
-    } catch (error) {
-      window.alert(`Could not import that file: ${error.message}`);
-    }
-    importFile.value = '';
-  });
-  document.getElementById('reset-btn').addEventListener('click', () => {
-    if (window.confirm('Clear all earned trophies?')) {
-      state.earned = new Set();
-      clearProgress();
-      renderAll();
-    }
-  });
+  const tab = params.get('tab');
+  if (tab === 'roadmap' || tab === 'missables' || tab === 'sources') activateTab(tab);
+
+  renderProgress();
+  renderList();
+
+  if (openIds.size > 0) {
+    // Land on the card whose guide is open, with the smallest scroll that
+    // gets it fully into view ('nearest'): the first card is already on
+    // screen, so the cover keeps its header, progress and filters, while a
+    // card further down the list (as #28 is) scrolls just enough to show it
+    // together with the masked story trophies above it.
+    const opened = cardsEl.querySelector('.guide.open');
+    const card = opened ? opened.closest('.card') : cardsEl.querySelector('.card');
+    if (card) card.scrollIntoView({ block: 'nearest' });
+  }
 }
 
-boot();
+boot().catch((error) => {
+  cardsEl.replaceChildren();
+  const note = document.createElement('p');
+  note.className = 'empty-state';
+  note.hidden = false;
+  note.textContent = `The trophy data could not be loaded (${error.message}). Check that data/trophies.json sits beside this page and reload.`;
+  cardsEl.append(note);
+});
