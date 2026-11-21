@@ -1,7 +1,7 @@
 {
   "game": "Grand Theft Auto VI",
   "platform": "PlayStation 5",
-  "list": "Official 55 trophies, as published on PlayStation Network (via Exophase and PSNProfiles, November 2026). Names, descriptions and grades are PlayStation's own words; every guide below is written for this companion, in its own words, and names its source.",
+  "list": "Official 55 trophies, as published on PlayStation Network (via Exophase and PSNProfiles, November 2026). Names, descriptions and grades are PlayStation's own words; every guide below is written for this atlas, in its own words, and names its source.",
   "counts": { "total": 55, "platinum": 1, "gold": 2, "silver": 6, "bronze": 46, "hidden": 28, "online": 0 },
   "trophies": [
     {
@@ -13,7 +13,7 @@
       "kind": "platinum",
       "count": null,
       "missable": false,
-      "guide": "The platinum lands the moment the other 54 trophies are all yours, so there is no separate task here — the whole companion is the guide to it. Expect a long haul: PowerPyx puts the platinum at about 200 hours and Push Square at 250 hours or more, most of it the 100% completion checklist rather than the story. One playthrough is enough, there are no online trophies, and nothing here needs a second character run. The one hard rule for the whole run: cheats switch trophies off on this save, and they also stop the game saving, so keep them off the file you take to the platinum.",
+      "guide": "The platinum lands the moment the other 54 trophies are all yours, so there is no separate task here — the whole atlas is the guide to it. Expect a long haul: PowerPyx puts the platinum at about 200 hours and Push Square at 250 hours or more, most of it the 100% completion checklist rather than the story. One playthrough is enough, there are no online trophies, and nothing here needs a second character run. The one hard rule for the whole run: cheats switch trophies off on this save, and they also stop the game saving, so keep them off the file you take to the platinum.",
       "source": "PowerPyx GTA 6 trophy guide; Push Square GTA 6 trophy guide",
       "sourceUrl": "https://sixshore.com/gta-6/guides/trophies-and-achievements/"
     },

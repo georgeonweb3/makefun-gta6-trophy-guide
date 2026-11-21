@@ -1,4 +1,4 @@
-// Leonida Trophy Companion — bootstrap. Loads the trophy data, wires the
+// Leonida Trophy Atlas — bootstrap. Loads the trophy data, wires the
 // toolbar, the tabs and the tracker, and renders the checklist. URL params
 // drive the views screenshots use: ?tab=roadmap|missables|sources,
 // ?spoiler=1, ?demo=1 (a seeded in-memory save), ?open=<id> (open a guide).
@@ -81,7 +81,7 @@ function wireToolbar() {
     renderList();
   });
   $('exportBtn').addEventListener('click', () => {
-    downloadText('leonida-trophy-progress.json', store.exportText());
+    downloadText('leonida-trophy-atlas-progress.json', store.exportText());
   });
   $('importFile').addEventListener('change', async (event) => {
     const file = event.target.files[0];

@@ -1,4 +1,4 @@
-// Leonida Trophy Companion — the hand-in program (Node 22, standard library
+// Leonida Trophy Atlas — the hand-in program (Node 22, standard library
 // only). The guide itself is plain static files: app/ holds the tracker, the
 // guides and the data, screenshots/ holds four real renders of it running.
 // This program copies both folders into the output directory and writes

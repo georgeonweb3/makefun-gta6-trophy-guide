@@ -3,7 +3,7 @@
 // (?demo=1) seeds 17 earned trophies in memory only and never touches the
 // real save, so screenshots never disturb a player's own progress.
 
-export const STORAGE_KEY = 'leonida-trophy-companion-v1';
+export const STORAGE_KEY = 'leonida-trophy-atlas-v1';
 
 // A plausible early-game save for screenshots: the opening, Chapters 1-3,
 // three story missions, and a handful of open-world trophies.
@@ -48,7 +48,7 @@ export function createStore(demo) {
       }
     },
     exportText() {
-      return JSON.stringify({ app: 'leonida-trophy-companion', version: 1, earned: [...earned].sort((a, b) => a - b) }, null, 2);
+      return JSON.stringify({ app: 'leonida-trophy-atlas', version: 1, earned: [...earned].sort((a, b) => a - b) }, null, 2);
     },
     // Returns { ok: true, count } or { ok: false, error }.
     importText(text) {
